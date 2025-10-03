@@ -14,10 +14,10 @@ console.log(filters,categories);
 
   const priceRanges = [
     { label: 'Free', min: 0, max: 0 },
-    { label: 'Under $50', min: 0, max: 50 },
-    { label: '$50 - $100', min: 50, max: 100 },
-    { label: '$100 - $250', min: 100, max: 250 },
-    { label: '$250+', min: 250, max: 1000 },
+    { label: 'Under ₹50', min: 0, max: 50 },
+    { label: '₹50 - ₹100', min: 50, max: 100 },
+    { label: '₹100 - ₹250', min: 100, max: 250 },
+    { label: '₹250+', min: 250, max: 1000 },
   ];
 
   return (

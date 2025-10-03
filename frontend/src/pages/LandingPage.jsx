@@ -229,14 +229,15 @@ const LandingPage = () => {
             <ArrowRight className="w-5 h-5" />
           </Link>
           )}
-          
+            {!user&&(
+
             <Link
             to="/login"
             className="inline-flex items-center space-x-2 bg-white text-primary-600 font-semibold px-8 py-4 rounded-xl hover:bg-gray-50 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-1"
             >
             <span>Start Creating</span>
             <ArrowRight className="w-5 h-5" />
-          </Link>
+          </Link>)}
         </div>
       </section>
     </div>

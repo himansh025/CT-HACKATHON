@@ -7,7 +7,12 @@ import { Link } from 'react-router-dom';
 import axiosInstance from '../config/apiconfig';
 import Loader from '../components/Loader';
 import EditProfile from '../components/EditProfile';
-// import QRScanner from '../components/QRScanner';
+import {
+  LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid,
+  Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell
+} from 'recharts';
+
+import QRScanner from '../components/QRScanner';
 
 const OrganizerDashboard = () => {
   const [activeTab, setActiveTab] = useState('overview');
@@ -42,6 +47,29 @@ const OrganizerDashboard = () => {
       setLoading(false);
     }
   };
+
+  // Revenue trend data (based on bookings)
+const revenueTrend = recentBookings.map(b => ({
+  date: new Date(b.createdAt).toLocaleDateString(),
+  revenue: b.totalAmount
+}));
+
+// Tickets trend data
+const ticketsTrend = recentBookings.map(b => ({
+  date: new Date(b.createdAt).toLocaleDateString(),
+  tickets: b.tickets.reduce((acc, t) => acc + t.quantity, 0)
+}));
+
+// Event revenue distribution (for Pie Chart)
+const eventRevenue = allOrganizerEvents.map(event => ({
+  name: event.title,
+  value: Number(event.revenue || 0)
+}));
+console.log(eventRevenue);
+
+// Colors for Pie
+const pieColors = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
+
 
   useEffect(() => {
     fetchDashboardStats();
@@ -320,37 +348,70 @@ const OrganizerDashboard = () => {
               </div>
             )}
 
-            {activeTab === 'analytics' && (
-              <div className="space-y-8">
-                <h3 className="text-2xl font-bold text-gray-900 mb-4">Overall Event Analytics</h3>
-                <div className="bg-gray-100 h-64 rounded-xl flex items-center justify-center border border-gray-200">
-                  <p className="text-gray-500">Sales vs. Attendees Chart Placeholder</p>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-200">
-                    <h4 className="font-semibold text-gray-900 mb-3">Revenue Breakdown</h4>
-                    <ul className="space-y-2 text-sm">
-                      <li className="flex justify-between"><span>Total Tickets Sold:</span> <span className="font-medium">{stats.ticketsSold}</span></li>
-                      <li className="flex justify-between"><span>Gross Revenue:</span> <CurrencyDisplay amount={stats.totalRevenue} className="font-medium" /></li>
-                      <li className="flex justify-between"><span>Platform Fees (5%):</span> <CurrencyDisplay amount={((stats.totalRevenue || 0) * 0.05).toFixed(2)} className="font-medium text-red-500" /></li>
-                      <li className="flex justify-between pt-2 border-t font-bold"><span>Net Revenue:</span> <CurrencyDisplay amount={((stats.totalRevenue || 0) * 0.95).toFixed(2)} /></li>
-                    </ul>
-                  </div>
-                  <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-200">
-                    <h4 className="font-semibold text-gray-900 mb-3">Top Performing Events</h4>
-                    <ul className="space-y-2 text-sm">
-                      {[...allOrganizerEvents].sort((a, b) => b.revenue - a.revenue).slice(0, 3).map((event, i) => (
-                        <li key={i} className="flex justify-between text-gray-700">
-                          <span>{event.title}</span>
-                          <CurrencyDisplay amount={event.revenue} className="font-medium text-green-600" />
-                        </li>
-                      ))}
-                      {allOrganizerEvents.length === 0 && <li className="text-gray-500">No event data to display.</li>}
-                    </ul>
-                  </div>
-                </div>
-              </div>
-            )}
+        {activeTab === 'analytics' && (
+  <div className="space-y-8">
+    <h3 className="text-2xl font-bold text-gray-900 mb-4">Event Analytics</h3>
+
+    {/* Revenue Over Time */}
+    <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+      <h4 className="font-semibold text-gray-900 mb-3">Revenue Over Time</h4>
+      <ResponsiveContainer width="100%" height={300}>
+        <LineChart data={revenueTrend}>
+          <CartesianGrid strokeDasharray="3 3" />
+          <XAxis dataKey="date" />
+          <YAxis />
+          <Tooltip />
+          <Legend />
+          <Line type="monotone" dataKey="revenue" stroke="#10b981" />
+        </LineChart>
+      </ResponsiveContainer>
+    </div>
+
+    {/* Tickets Sold Over Time */}
+    <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+      <h4 className="font-semibold text-gray-900 mb-3">Tickets Sold Over Time</h4>
+      <ResponsiveContainer width="100%" height={300}>
+        <BarChart data={ticketsTrend}>
+          <CartesianGrid strokeDasharray="3 3" />
+          <XAxis dataKey="date" />
+          <YAxis />
+          <Tooltip />
+          <Legend />
+          <Bar dataKey="tickets" fill="#3b82f6" />
+        </BarChart>
+      </ResponsiveContainer>
+    </div>
+
+    {/* Revenue Distribution per Event */}
+    <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+      <h4 className="font-semibold text-gray-900 mb-3">Revenue by Event</h4>
+      {eventRevenue.length > 0 ? (
+        <ResponsiveContainer width="100%" height={300}>
+          <PieChart>
+            <Pie
+              data={eventRevenue}
+              dataKey="value"
+              nameKey="name"
+              cx="50%"
+              cy="50%"
+              outerRadius={120}
+              fill="#8884d8"
+              label
+            >
+              {eventRevenue.map((entry, index) => (
+                <Cell key={`cell-${index}`} fill={pieColors[index % pieColors.length]} />
+              ))}
+            </Pie>
+            <Tooltip />
+          </PieChart>
+        </ResponsiveContainer>
+      ) : (
+        <p className="text-gray-500">No revenue data available.</p>
+      )}
+    </div>
+  </div>
+)}
+
 
             {activeTab === 'settings' && <EditProfile />}
           </div>

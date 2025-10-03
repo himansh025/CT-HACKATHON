@@ -14,43 +14,57 @@ const getDashboard = async (req, res) => {
     // 1. Fetch all events by this organizer
     const events = await Event.find({ "organizer.organizer_Id": organizerId });
 
-    // 2. Fetch all bookings (including created/pending)
-    const allBookings = await Booking.find({
+    // 2. Fetch all bookings (exclude cancelled ones)
+    const activeBookings = await Booking.find({
       eventId: { $in: events.map((e) => e._id) },
+      status: { $ne: "cancelled" }   // exclude cancelled
     });
 
-    const confirmedBookings = allBookings.filter(b => b.status === "confirmed");
-    const ticketsBooked = allBookings.filter(b => b.status !== "cancelled");
-
+    // Bookings that are confirmed/created/pending (not cancelled)
+    const ticketsBooked = activeBookings;
 
     // --- Stats calculation ---
     const totalEvents = events.length;
-    
-    // Calculate total revenue ONLY from CONFIRMED bookings
-    const totalRevenue = confirmedBookings.reduce((sum, b) => sum + (b.totalAmount || 0), 0).toFixed(2);
-    
-    // Calculate total tickets SOLD (using all non-cancelled bookings as requested)
-    const ticketsSold = ticketsBooked.reduce((sum, b) => sum + b.tickets.reduce((acc, t) => acc + t.quantity, 0), 0);
-    
-    // Calculate average rating only from events that have been rated
-    const ratedEvents = events.filter(e => e.rating > 0);
+console.log(activeBookings);
+    // Total revenue = sum of all active bookings' amounts
+    const totalRevenue = activeBookings
+      .reduce((sum, b) => sum + (b.totalAmount || 0), 0)
+      .toFixed(2);
+      console.log("fdf");
+      console.log(totalRevenue);
+
+    // Total tickets SOLD
+    const ticketsSold = ticketsBooked.reduce(
+      (sum, b) => sum + b.tickets.reduce((acc, t) => acc + t.quantity, 0),
+      0
+    );
+
+    // Average rating
+    const ratedEvents = events.filter((e) => e.rating > 0);
     const avgRating =
       ratedEvents.length > 0
-        ? (ratedEvents.reduce((sum, e) => sum + (e.rating || 0), 0) / ratedEvents.length).toFixed(1)
+        ? (
+            ratedEvents.reduce((sum, e) => sum + (e.rating || 0), 0) /
+            ratedEvents.length
+          ).toFixed(1)
         : 0;
 
     // --- Recent events data enrichment ---
     const recentEvents = events
-      .map(event => {
-        // Calculate total available tickets by summing up quantities of all ticket types
-        const totalTickets = event.tickets.reduce((sum, t) => sum + (t.quantity || 0), 0);
-        // Calculate total tickets sold (using the 'sold' field in the ticket subdocuments)
-        const ticketsSoldCount = event.tickets.reduce((sum, t) => sum + (t.sold || 0), 0);
-        
-        // Calculate event-specific revenue from confirmed bookings
-        const eventRevenue = confirmedBookings
-          .filter(b => b.eventId.equals(event._id))
-          .reduce((sum, b) => sum + b.totalAmount, 0)
+      .map((event) => {
+        const totalTickets = event.tickets.reduce(
+          (sum, t) => sum + (t.quantity || 0),
+          0
+        );
+        const ticketsSoldCount = event.tickets.reduce(
+          (sum, t) => sum + (t.sold || 0),
+          0
+        );
+
+        // Revenue for this event (from active bookings)
+        const eventRevenue = activeBookings
+          .filter((b) => b.eventId.equals(event._id))
+          .reduce((sum, b) => sum + (b.totalAmount || 0), 0)
           .toFixed(2);
 
         return {
@@ -59,18 +73,18 @@ const getDashboard = async (req, res) => {
           date: event.date,
           time: event.time,
           images: event.images,
-          status: event.status || "Published", 
+          status: event.status || "Published",
           totalTickets,
           ticketsSold: ticketsSoldCount,
           revenue: eventRevenue,
           rating: event.rating,
         };
       })
-      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)) 
-      .slice(0, 10); // Show top 10 recent events for dashboard list
+      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+      .slice(0, 10);
 
     // --- Recent bookings (for activity feed) ---
-    const recentBookings = allBookings
+    const recentBookings = activeBookings
       .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
       .slice(0, 5);
 

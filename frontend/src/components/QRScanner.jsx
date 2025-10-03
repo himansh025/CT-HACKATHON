@@ -1,74 +1,82 @@
+// src/components/QRScanner.jsx
 import React, { useState } from "react";
-import { QrReader } from 'react-qr-reader';
+import BarcodeScanner from "react-qr-barcode-scanner";
 
-const QRScanner = () => {
-  const [scanResult, setScanResult] = useState("");
+const QRScanner = ({ eventId, onClose }) => {
+  const [result, setResult] = useState(null);
   const [verified, setVerified] = useState(false);
-  const [cameraActive, setCameraActive] = useState(true);
+  const [scanning, setScanning] = useState(true);
 
-  const handleScan = (result) => {
-    if (result?.text && cameraActive) {
-      const ticketId = result.text;
-      setScanResult(ticketId);
-      setVerified(true);
-      setCameraActive(false);
-    }
-  };
+  const handleScan = (scannedCode) => {
+    if (!scanning || !scannedCode) return;
 
-  const handleError = (error) => {
-    console.error("QR Scanner Error:", error);
+    setResult(scannedCode);
+    setVerified(true);
+    setScanning(false);
   };
 
   const scanNextTicket = () => {
-    setScanResult("");
+    setResult(null);
     setVerified(false);
-    setCameraActive(true);
+    setScanning(true);
   };
 
   return (
-    <div className="max-w-md mx-auto bg-white rounded-xl shadow-lg p-6">
-      <h2 className="text-2xl font-bold text-center mb-4">QR Ticket Scanner</h2>
+    <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
+      <div className="bg-white p-6 rounded-xl shadow-lg max-w-md w-full relative">
+        {/* Close Button */}
+        <button
+          onClick={onClose}
+          className="absolute top-3 right-3 text-gray-500 hover:text-gray-800"
+        >
+          ✖
+        </button>
 
-      {/* QR Scanner */}
-      {cameraActive ? (
-        <div className="border-2 border-dashed border-gray-300 rounded-lg overflow-hidden">
-          <QrReader
-            constraints={{ facingMode: "environment" }}
-            onResult={handleScan}
-            onError={handleError}
-            style={{ width: "100%" }}
-          />
-        </div>
-      ) : (
-        <div className="text-center py-8 bg-gray-100 rounded-lg">
-          <p className="text-gray-600">Scanner paused</p>
-        </div>
-      )}
+        <h2 className="text-lg font-semibold mb-4">
+          Scan Ticket (Event ID: {eventId})
+        </h2>
 
-      {/* Scanned Ticket */}
-      {scanResult && (
-        <div className="mt-4 p-3 bg-gray-50 rounded">
-          <p className="text-sm text-gray-600">Scanned Ticket ID:</p>
-          <p className="text-xs font-mono break-all">{scanResult}</p>
-        </div>
-      )}
+        {/* QR Scanner */}
+        {scanning ? (
+          <div className="flex justify-center">
+            <BarcodeScanner
+              width={300}
+              height={300}
+              onUpdate={(err, scanResult) => {
+                if (scanResult?.text) {
+                  handleScan(scanResult.text);
+                }
+              }}
+            />
+          </div>
+        ) : (
+          <div className="text-center py-8 bg-gray-100 rounded-lg">
+            <p className="text-gray-600">Scanner paused</p>
+          </div>
+        )}
 
-      {/* Verification Result */}
-      {verified && (
-        <div className="mt-4 p-4 rounded-lg bg-green-100 border border-green-300 text-center">
-          <h3 className="font-semibold text-green-800">✅ Ticket Verified</h3>
-          <p className="mt-1 text-green-700">
-            Ticket <span className="font-mono">{scanResult}</span> verified successfully.
+        {/* Verification Status */}
+        {verified && (
+          <div className="mt-4 p-4 rounded-lg bg-green-100 border border-green-300 text-center">
+            <h3 className="font-semibold text-green-800">✅ Ticket Verified</h3>
+            <p className="mt-1 text-green-700 font-mono">{result}</p>
+
+            <button
+              onClick={scanNextTicket}
+              className="mt-4 w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded"
+            >
+              Scan Next Ticket
+            </button>
+          </div>
+        )}
+
+        {/* Last scanned ticket */}
+        {!verified && result && (
+          <p className="mt-2 text-xs text-gray-500 break-words">
+            Last scanned ticket: {result}
           </p>
-
-          <button
-            onClick={scanNextTicket}
-            className="mt-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded"
-          >
-            Scan Next Ticket
-          </button>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 };
