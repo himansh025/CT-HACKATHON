@@ -8,9 +8,14 @@ const userRoutes = require('./routes/userRoutes');
 const oAuth = require('./routes/oAuth');
 const eventsRoute = require('./routes/eventRoutes');
 const organizerRoute = require('./routes/organizerRoutes');
-const bookingRoute = require('./routes/bookingRoutes'); 
+const bookingRoute = require('./routes/bookingRoutes');
+const chatbotRoute= require('./routes/chatbotRoute')
+const qrRoutes = require("./routes/qrRoutes");
 
-const app = express(); 
+
+const app = express();
+// REMOVED: const notificationRoutes = require("./routes/notificationRoutes");
+// REMOVED: app.use("/api/notifications", notificationRoutes);
 
 
 // Middleware
@@ -23,7 +28,10 @@ app.use('/api/users',userRoutes );
 app.use('/api/oauth',oAuth );
 app.use('/api/events',eventsRoute );
 app.use('/api/organizer',organizerRoute );
-app.use('/api/booking',bookingRoute ); 
+app.use('/api/booking',bookingRoute );
+app.use('/api/chatbot',chatbotRoute );
+app.use("/api/qr", qrRoutes);
+
 
 // Root route
 app.get('/', (req, res) => {

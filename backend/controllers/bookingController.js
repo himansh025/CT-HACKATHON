@@ -2,6 +2,7 @@ const Event = require("../models/eventModel.js");
 // const generateQR =require("../utils/qr.js");
 const Booking = require("../models/bookingModel.js");
 const Razorpay = require("razorpay");
+
 const razorpay = new Razorpay({
   key_id: process.env.RAZORPAY_KEY_ID,
   key_secret: process.env.RAZORPAY_KEY_SECRET,
