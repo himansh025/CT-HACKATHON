@@ -6,8 +6,10 @@ const connectDB = require('./config/db');
 // Route imports
 const userRoutes = require('./routes/userRoutes');
 const oAuth = require('./routes/oAuth');
+const eventsRoute = require('./routes/eventRoutes'); 
+const bookingRoute = require('./routes/bookingRoutes'); 
 
-const app = express();
+const app = express(); 
 
 
 // Middleware
@@ -18,6 +20,8 @@ connectDB()
 // API Routes
 app.use('/api/users',userRoutes );
 app.use('/api/oauth',oAuth );
+app.use('/api/events',eventsRoute ); 
+app.use('/api/booking',bookingRoute ); 
 
 // Root route
 app.get('/', (req, res) => {
