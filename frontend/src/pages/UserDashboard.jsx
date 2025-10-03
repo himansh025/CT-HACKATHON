@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from "react";
-// 💡 FIX 1: Import Redux hooks for accessing user state
 import { useSelector } from "react-redux";
 import {
   Calendar,
@@ -15,9 +14,6 @@ import {
 import axiosInstance from "../config/apiconfig";
 import { format } from "date-fns";
 import Loader from "../components/Loader";
-import RecommendedEvents from "../components/RecommendedEvents";
-// 💡 FIX 2: Import the new modal component
-import InterestSelectionModal from "../components/InterestSelectionModal";
 
 // --- CORE FIX: QR CODE GENERATION UTILITY ---
 // This function dynamically loads the 'qrcode' npm package and generates a Data URI.
@@ -40,15 +36,14 @@ const generateQRCodeDataURL = async (text) => {
 };
 
 const UserDashboard = () => {
-  // 💡 FIX 3: Get user details from Redux
+  // FIX: Retained for greeting the user and base authentication checks
   const { user } = useSelector((state) => state.auth);
 
   const [activeTab, setActiveTab] = useState("upcoming");
   const [myBookings, setMyBookings] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  // 💡 FIX 4: Add state for the new modal
-  const [showInterestsModal, setShowInterestsModal] = useState(false);
+  // REMOVED: showInterestsModal state
 
   // --- HANDLER FUNCTIONS (UNCHANGED) ---
 
@@ -231,16 +226,7 @@ const UserDashboard = () => {
 
   // --- END HANDLER FUNCTIONS ---
 
-  // 💡 FIX 5: Logic to display modal on first visit (if no interests are set)
-  useEffect(() => {
-    // Check if the user object is available and if their interests array is null or empty
-    // The conditional check here is crucial for triggering the AI feature.
-    if (user && Array.isArray(user.interests) && user.interests.length === 0) {
-      setShowInterestsModal(true);
-    } else {
-      setShowInterestsModal(false);
-    }
-  }, [user]);
+  // REMOVED: useEffect hook for showInterestsModal logic
 
   useEffect(() => {
     const getBookings = async () => {
@@ -306,11 +292,7 @@ const UserDashboard = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 pt-8">
-      {/* 💡 FIX 6: Conditionally render the Interest Modal */}
-      <InterestSelectionModal
-        show={showInterestsModal}
-        onClose={() => setShowInterestsModal(false)}
-      />
+      {/* REMOVED: InterestSelectionModal rendering */}
 
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header (Updated to greet the user) */}
@@ -323,8 +305,7 @@ const UserDashboard = () => {
           </p>
         </div>
 
-        {/* Recommendations Section (Placed prominently at the top) */}
-        <RecommendedEvents />
+        {/* REMOVED: RecommendedEvents rendering */}
 
         {/* Stats Cards (Updated counts) */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
@@ -578,18 +559,7 @@ const UserDashboard = () => {
               </div>
             )}
 
-            {/* Display Past Bookings (consolidated logic) */}
-            {/* The separate 'Display Past Bookings' and 'Display Cancelled Bookings' blocks are now redundant 
-                since the primary Display Filtered Bookings block handles all tabs and styling. 
-                I will comment out the redundant sections for a cleaner structure. */}
-
-            {/* {activeTab === "past" && (
-                ... Redundant block removed for clarity ...
-            )}
-            {activeTab === "cancelled" && (
-                ... Redundant block removed for clarity ...
-            )} 
-            */}
+            {/* Redundant blocks removed */}
           </div>
         </div>
       </div>

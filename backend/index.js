@@ -6,7 +6,7 @@ const connectDB = require('./config/db');
 // Route imports
 const userRoutes = require('./routes/userRoutes');
 const oAuth = require('./routes/oAuth');
-const eventsRoute = require('./routes/eventRoutes');
+const eventRoutes = require("./routes/eventRoutes");
 const organizerRoute = require('./routes/organizerRoutes');
 const bookingRoute = require('./routes/bookingRoutes');
 const chatbotRoute= require('./routes/chatbotRoute')
@@ -20,11 +20,20 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+app.use((req, res, next) => {
+  console.log(
+    `[${new Date().toISOString()}] Received ${req.method} request for ${
+      req.originalUrl
+    }`
+  );
+  next(); // Pass the request to the next middleware
+});
+
 connectDB()
 // API Routes
 app.use('/api/users',userRoutes );
 app.use('/api/oauth',oAuth );
-app.use('/api/events',eventsRoute );
+app.use('/api/events', eventRoutes); // <-- THIS LINE IS CRUCIAL
 app.use('/api/organizer',organizerRoute );
 app.use('/api/booking',bookingRoute );
 app.use('/api/chatbot',chatbotRoute );

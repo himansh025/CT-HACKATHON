@@ -41,7 +41,7 @@ const InterestSelectionModal = ({ show, onClose }) => {
 
     setLoading(true);
     try {
-      const { data } = await axios.post("/api/users/interests", {
+      const { data } = await axios.post("/users/interests", {
         interests: selectedInterests,
       });
 
