@@ -1,22 +1,25 @@
 import React, { useEffect, useState } from 'react';
 import { 
   BarChart3, Calendar, Users, DollarSign, Plus, TrendingUp,
-  Eye, Edit, Settings, Download, Trash2, IndianRupee // <-- FIXED: Added IndianRupee
+  Eye, Edit, Settings, Download, Trash2, IndianRupee  
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import axiosInstance from '../config/apiconfig';
 import Loader from '../components/Loader';
-import EditProfile from '../components/EditProfile';
+import EditProfile from '../components/EditProfile'; 
+import QRScanner from '../components/QRScanner';
 
 const OrganizerDashboard = () => {
   const [activeTab, setActiveTab] = useState('overview');
   const [loading, setLoading] = useState(false);
+  const [exportLoading, setExportLoading] = useState(false);
   const [stats, setStats] = useState({});
   const [recentBookings, setRecentBookings] = useState([]);
   const [allOrganizerEvents, setAllOrganizerEvents] = useState([]);
   const [eventStatusFilter, setEventStatusFilter] = useState('All'); 
+  const [showScanner, setShowScanner] = useState(false);
+  const [scannerEventId, setScannerEventId] = useState(null);
 
-  // Function to fetch dashboard stats (for overview tab)
   const fetchDashboardStats = async () => {
     try {
       const { data } = await axiosInstance.get("/organizer/dashboard");
@@ -27,7 +30,6 @@ const OrganizerDashboard = () => {
     }
   };
 
-  // Function to fetch the comprehensive list of ALL events (for events tab)
   const fetchAllEvents = async () => {
     try {
       setLoading(true);
@@ -46,7 +48,6 @@ const OrganizerDashboard = () => {
     fetchAllEvents();
   }, []);
   
-  // Helper component to render currency consistently
   const CurrencyDisplay = ({ amount, className = '', prependSymbol = false }) => (
     <div className={`flex items-center ${className}`}>
       <IndianRupee className="w-4 h-4 mr-0.5" />
@@ -54,33 +55,20 @@ const OrganizerDashboard = () => {
     </div>
   );
 
-  // --- IMPLEMENTED FUNCTIONALITY: CSV Conversion and Export ---
   const convertToCSV = (data, filename) => {
-    if (data.length === 0) {
-      alert("No data available to export.");
-      return;
-    }
-    
+    if (data.length === 0) return;
     const headers = Object.keys(data[0]);
     const csvRows = [];
-    
-    // 1. Add headers
     csvRows.push(headers.join(','));
-
-    // 2. Add data rows, escaping inner quotes
     for (const row of data) {
       const values = headers.map(header => {
-        // Replace double quotes with two double quotes and wrap in double quotes
         const escaped = ('' + row[header]).replace(/"/g, '""');
         return `"${escaped}"`;
       });
       csvRows.push(values.join(','));
     }
-
     const csvString = csvRows.join('\n');
     const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
-
-    // Create download link
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
     link.setAttribute('download', filename);
@@ -91,51 +79,38 @@ const OrganizerDashboard = () => {
   };
   
   const handleExportData = async () => {
-    setLoading(true);
+    setExportLoading(true);
     try {
       const response = await axiosInstance.get("/organizer/export-data");
       const exportData = response.data.data;
-      
       const filename = `event_bookings_${new Date().toISOString().slice(0, 10)}.csv`;
-      
       convertToCSV(exportData, filename);
       alert("Booking data export initiated successfully.");
-
     } catch (error) {
       console.error("Error exporting data:", error);
       alert("Failed to export data. Check server connection.");
     } finally {
-      setLoading(false);
+      setExportLoading(false);
     }
   };
-  // --- END EXPORT FUNCTIONALITY ---
 
-
-  // --- IMPLEMENTED FUNCTIONALITY: HANDLE EVENT DELETION ---
   const handleDeleteEvent = async (eventId, eventTitle) => {
       if (window.confirm(`Are you sure you want to delete the event: "${eventTitle}"? This cannot be undone.`)) {
           try {
               await axiosInstance.delete(`/events/${eventId}`);
-              
-              // Optimistically update the list by filtering the deleted event
               setAllOrganizerEvents(prevEvents => prevEvents.filter(event => event._id !== eventId));
-              
               alert(`Event "${eventTitle}" deleted successfully.`);
-              fetchDashboardStats(); // Refresh overall stats/counts
+              fetchDashboardStats();
           } catch (error) {
               console.error("Error deleting event:", error);
               alert("Failed to delete event. Check server logs.");
           }
       }
   };
-  // --- END DELETE FUNCTION ---
-
-  // FILTERED EVENTS logic now uses the comprehensive list
   const displayedEvents = allOrganizerEvents.filter(event => {
     if (eventStatusFilter === 'All') return true;
     return event.status === eventStatusFilter;
   });
-
 
   const statCards = [
     { label: 'Total Events', value: stats.totalEvents || 0, icon: Calendar, color: 'primary' },
@@ -149,7 +124,6 @@ const OrganizerDashboard = () => {
   return (
     <div className="min-h-screen bg-gray-50 pt-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Header */}
         <div className="mb-8 flex flex-col lg:flex-row lg:items-center lg:justify-between">
           <div>
             <h1 className="text-3xl font-bold text-gray-900 mb-2">Organizer Dashboard</h1>
@@ -161,7 +135,6 @@ const OrganizerDashboard = () => {
           </Link>
         </div>
 
-        {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           {statCards.map((stat, i) => (
             <div key={i} className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
@@ -174,7 +147,6 @@ const OrganizerDashboard = () => {
                 <stat.icon className="w-6 h-6" />
               </div>
               <div className="text-2xl font-bold text-gray-900 mb-1">
-                {/* Renders Rupee symbol only for Total Revenue stat card */}
                 {stat.label === 'Total Revenue' ? (
                   <CurrencyDisplay amount={stats.totalRevenue} className="text-2xl font-bold text-gray-900" />
                 ) : (
@@ -186,7 +158,6 @@ const OrganizerDashboard = () => {
           ))}
         </div>
 
-        {/* Tabs */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-100">
           <div className="border-b border-gray-200">
             <nav className="flex space-x-8 px-6">
@@ -200,9 +171,7 @@ const OrganizerDashboard = () => {
                       : 'border-transparent text-gray-500 hover:text-gray-700'
                   }`}
                 >
-                    {tab==="settings" &&(
-                            <Settings className="w-10 h-5 text-primary-600" />
-               )}
+                  {tab==="settings" && <Settings className="w-10 h-5 text-primary-600" />}
                   {tab.charAt(0).toUpperCase() + tab.slice(1)}
                 </button>
               ))}
@@ -227,9 +196,7 @@ const OrganizerDashboard = () => {
                       <div className="text-sm text-gray-600">Check your performance</div>
                     </div>
                   </button>
-                  
-                  {/* --- WIRED EXPORT DATA BUTTON --- */}
-                  <button onClick={handleExportData} className="flex items-center space-x-3 p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors" disabled={loading}>
+                  <button onClick={handleExportData} className="flex items-center space-x-3 p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors" disabled={exportLoading}>
                     <Download className="w-8 h-8 text-blue-600" />
                     <div>
                       <div className="font-medium text-gray-900">Export Data</div>
@@ -238,7 +205,6 @@ const OrganizerDashboard = () => {
                   </button>
                 </div>
                 
-                {/* Placeholder for Recent Bookings/Activity Feed */}
                 <div className="bg-gray-50 p-6 rounded-xl border border-gray-200">
                     <h3 className="text-lg font-semibold text-gray-900 mb-4">Recent Bookings (Last 5)</h3>
                     {recentBookings.length > 0 ? (
@@ -261,7 +227,6 @@ const OrganizerDashboard = () => {
               <div className="space-y-6">
                 <div className="flex justify-between items-center mb-4">
                     <h3 className="text-xl font-semibold text-gray-900">All My Events ({allOrganizerEvents.length})</h3>
-                    {/* Event Status Filter */}
                     <select
                         value={eventStatusFilter}
                         onChange={(e) => setEventStatusFilter(e.target.value)}
@@ -324,31 +289,30 @@ const OrganizerDashboard = () => {
                               </div>
                             </div>
                             <div className="flex flex-wrap gap-2">
-                              {/* View Button */}
                               <Link to={`/event/${event._id}`} className="flex items-center space-x-1 px-3 py-1 text-sm bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200">
                                 <Eye className="w-4 h-4" />
                                 <span>View</span>
                               </Link>
-                              
-                              {/* Edit Button (Wired for Edit flow) */}
                               <Link to={`/create-event?edit=${event._id}`} className="flex items-center space-x-1 px-3 py-1 text-sm bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200">
                                 <Edit className="w-4 h-4" />
                                 <span>Edit</span>
                               </Link>
-
-                              {/* Analytics Button */}
                               <button onClick={() => setActiveTab('analytics')} className="flex items-center space-x-1 px-3 py-1 text-sm bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200">
                                 <BarChart3 className="w-4 h-4" />
                                 <span>Analytics</span>
                               </button>
-                              
-                              {/* Delete Button (Wired for deletion) */}
                               <button 
                                 onClick={() => handleDeleteEvent(event._id, event.title)}
                                 className="flex items-center space-x-1 px-3 py-1 text-sm bg-red-100 text-red-700 rounded-md hover:bg-red-200"
                               >
                                 <Trash2 className="w-4 h-4" />
                                 <span>Delete</span>
+                              </button>
+                              <button 
+                                onClick={() => { setShowScanner(true); setScannerEventId(event._id); }}
+                                className="flex items-center space-x-1 px-3 py-1 text-sm bg-blue-100 text-blue-700 rounded-md hover:bg-blue-200"
+                              >
+                                QR Scanner
                               </button>
                             </div>
                           </div>
@@ -362,38 +326,23 @@ const OrganizerDashboard = () => {
             {activeTab === 'analytics' && (
               <div className="space-y-8">
                 <h3 className="text-2xl font-bold text-gray-900 mb-4">Overall Event Analytics</h3>
-                
-                {/* Chart Placeholder */}
                 <div className="bg-gray-100 h-64 rounded-xl flex items-center justify-center border border-gray-200">
                     <p className="text-gray-500">Sales vs. Attendees Chart Placeholder</p>
                 </div>
-
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-200">
                         <h4 className="font-semibold text-gray-900 mb-3">Revenue Breakdown</h4>
                         <ul className="space-y-2 text-sm">
                             <li className="flex justify-between"><span>Total Tickets Sold:</span> <span className="font-medium">{stats.ticketsSold}</span></li>
-                            <li className="flex justify-between">
-                              <span>Gross Revenue:</span> 
-                              <CurrencyDisplay amount={stats.totalRevenue} className="font-medium" />
-                            </li>
-                            {/* Platform Fees Calculation */}
-                            <li className="flex justify-between">
-                              <span>Platform Fees (5%):</span> 
-                              <CurrencyDisplay amount={((stats.totalRevenue || 0) * 0.05).toFixed(2)} className="font-medium text-red-500" prependSymbol={true} />
-                            </li>
-                            <li className="flex justify-between pt-2 border-t font-bold">
-                              <span>Net Revenue:</span> 
-                              <CurrencyDisplay amount={((stats.totalRevenue || 0) * 0.95).toFixed(2)} />
-                            </li>
+                            <li className="flex justify-between"><span>Gross Revenue:</span> <CurrencyDisplay amount={stats.totalRevenue} className="font-medium" /></li>
+                            <li className="flex justify-between"><span>Platform Fees (5%):</span> <CurrencyDisplay amount={((stats.totalRevenue || 0) * 0.05).toFixed(2)} className="font-medium text-red-500" /></li>
+                            <li className="flex justify-between pt-2 border-t font-bold"><span>Net Revenue:</span> <CurrencyDisplay amount={((stats.totalRevenue || 0) * 0.95).toFixed(2)} /></li>
                         </ul>
                     </div>
-                    
                     <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-200">
                         <h4 className="font-semibold text-gray-900 mb-3">Top Performing Events</h4>
                         <ul className="space-y-2 text-sm">
-                            {/* Sorts events by revenue for display */}
-                            {allOrganizerEvents.sort((a,b) => b.revenue - a.revenue).slice(0, 3).map((event, i) => (
+                            {[...allOrganizerEvents].sort((a,b) => b.revenue - a.revenue).slice(0, 3).map((event, i) => (
                                 <li key={i} className="flex justify-between text-gray-700">
                                     <span>{event.title}</span>
                                     <CurrencyDisplay amount={event.revenue} className="font-medium text-green-600" />
@@ -406,14 +355,14 @@ const OrganizerDashboard = () => {
               </div>
             )}
 
-            {activeTab === 'settings' &&
-            <>
-            <EditProfile/>  
-            </>
-}
+            {activeTab === 'settings' && <EditProfile />}
           </div>
         </div>
       </div>
+
+      {showScanner && scannerEventId && (
+        <QRScanner eventId={scannerEventId} onClose={() => setShowScanner(false)} />
+      )}
     </div>
   );
 };
