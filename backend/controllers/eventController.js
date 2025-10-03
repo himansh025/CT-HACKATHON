@@ -1,10 +1,10 @@
 const Event = require("../models/eventModel");
 const { uploadOnCloudinary } = require("../utils/cloudinary");
 const { sendNewEventEmail } = require("../utils/sendEmail");
-const User = require("../models/userModel");
+const User = require("../models/userModel"); // Ensure User model is imported
 const Booking = require("../models/bookingModel");
 
-// ✅ GET /events (Consistent naming: using const for all functions)
+// ✅ GET /events
 const getEvents = async (req, res) => {
   try {
     const {
@@ -22,13 +22,9 @@ const getEvents = async (req, res) => {
 
     const filter = {};
 
-    // 💡 Improvement: Filter out events whose date has passed by default
-    filter.date = { $gte: new Date() };
-
     if (category) filter.category = category;
     if (location) filter.venue = { $regex: location, $options: "i" };
-    // 💡 Improvement: Filter events happening on or after the specified date
-    if (date) filter.date = { $gte: new Date(date) };
+    if (date) filter.date = date;
     if (featured) filter.featured = featured === "true";
 
     if (search) {
@@ -113,38 +109,9 @@ const createEvent = async (req, res) => {
       data = JSON.parse(req.body.eventData);
     }
 
-    // Validate required fields
-    if (!data.title || !data.description || !data.category) {
-      return res.status(400).json({
-        success: false,
-        message: "Missing required fields: title, description, or category"
-      });
-    }
+    let tickets = []; // <-- initialize the array
 
-    if (!data.date || !data.startTime || !data.endTime) {
-      return res.status(400).json({
-        success: false,
-        message: "Missing required fields: date, startTime, or endTime"
-      });
-    }
-
-    if (!data.venueName || !data.venueAddress || !data.venueCapacity) {
-      return res.status(400).json({
-        success: false,
-        message: "Missing required venue information"
-      });
-    }
-
-    if (!data.coordinates || !data.coordinates.lat || !data.coordinates.lng) {
-      return res.status(400).json({
-        success: false,
-        message: "Missing venue coordinates"
-      });
-    }
-
-    // Build tickets array according to schema
-    const tickets = [];
-    
+    // Ticket Logic (Good)
     if (data.generalPrice && parseFloat(data.generalPrice) > 0) {
       tickets.push({
         type: "General Admission",
@@ -261,7 +228,7 @@ const updateEvent = async (req, res) => {
         });
     }
 
-    // 1. Handle Image Updates (Good)
+    // 1. Handle Image Updates
     let imageUrls = event.images;
     if (req.files?.length > 0) {
       imageUrls = [];
@@ -285,7 +252,7 @@ const updateEvent = async (req, res) => {
       price: data.generalPrice ? parseFloat(data.generalPrice) : event.price,
     };
 
-    // 3. Handle Ticket Updates (Good)
+    // 3. Handle Ticket Updates (Preserve sold counts)
     const newTickets = [];
     const existingTickets = event.tickets || [];
 
@@ -339,7 +306,7 @@ const deleteEvent = async (req, res) => {
         .status(404)
         .json({ success: false, message: "Event not found" });
 
-    // Authorization check
+    // Authorization check: only organizer can delete
     if (event.organizer.organizer_Id.toString() !== req.user.id.toString()) {
       return res
         .status(403)
@@ -377,8 +344,10 @@ const getCategories = async (_, res) => {
   }
 };
 
-// ✅ GET /events/recommendations (Fixed function definition for consistency)
+// 💡 FIX 1: Add the missing recommendation function
 const getRecommendedEvents = async (req, res) => {
+  // --- ADD THIS LOG ---
+  console.log("🚀 Reached getRecommendedEvents controller function!");
   try {
     const userId = req.user.id;
     const user = await User.findById(userId);
@@ -409,8 +378,7 @@ const getRecommendedEvents = async (req, res) => {
   }
 };
 
-// --- Consolidated Export Block ---
-// This ensures all functions defined with 'const' above are available for import.
+// 💡 FIX 2: Ensure the new function is exported
 module.exports = {
   getEvents,
   getEventById,
@@ -418,5 +386,5 @@ module.exports = {
   updateEvent,
   deleteEvent,
   getCategories,
-  getRecommendedEvents, // Properly included in the final export list
+  getRecommendedEvents,
 };

@@ -1,12 +1,11 @@
 // Event-App/frontend/src/store/slices/eventsSlice.js
 
 import { createSlice } from '@reduxjs/toolkit';
-import { mockEvents } from '../../data/mockEvent'; // Import mock data
 
 const eventsSlice = createSlice({
   name: 'events',
   initialState: {
-    events: mockEvents, // Use mockEvents as initial state
+    events: [], 
     featuredEvents: [],
     currentEvent: null,
     categories: ['All', 'Technology', 'Music', 'Business', 'Sports', 'Arts', 'Food', 'Health'],

@@ -14,43 +14,32 @@ L.Icon.Default.mergeOptions({
 // ----------------------
 // LocationMarker Component
 // ----------------------
-const LocationMarker = ({ position, onPositionChange, isReadOnly }) => {
-  const map = useMapEvents(
-    isReadOnly
-      ? {} // ❌ no click events in read-only mode
-      : {
-          click(e) {
-            onPositionChange({ lat: e.latlng.lat, lng: e.latlng.lng });
-            map.flyTo(e.latlng, map.getZoom());
-          },
-        }
-  );
+const LocationMarker = ({ position, onPositionChange, isReadOnly = false }) => {
+  const map = useMapEvents({
+    click(e) {
+      if (!isReadOnly) {
+        onPositionChange(e.latlng);
+        map.flyTo(e.latlng, map.getZoom());
+      }
+    },
+  });
 
-  if (!position) return null;
+  if (!position || position[0] == null || position[1] == null) return null;
 
   return (
-    <Marker
-      position={position}
-      draggable={!isReadOnly} // ✅ draggable only when not read-only
-      eventHandlers={
-        isReadOnly
-          ? {}
-          : {
-              dragend: (e) => {
-                const { lat, lng } = e.target.getLatLng();
-                onPositionChange({ lat, lng });
-              },
-            }
-      }
-    >
+    <Marker position={position}>
       <Popup>
-        <strong>Selected Location</strong>
-        <br />
-        Lat: {position.lat.toFixed(6)}, Lng: {position.lng.toFixed(6)}
+        <div className="text-sm">
+          <strong>Selected Location</strong>
+          <br />
+          Lat: {position[0] != null ? position[0].toFixed(6) : 'N/A'}, 
+          Lng: {position[1] != null ? position[1].toFixed(6) : 'N/A'}
+        </div>
       </Popup>
     </Marker>
   );
 };
+
 
 // ----------------------
 // Manual Input Component
@@ -98,51 +87,98 @@ const ManualCoordinateInputs = ({ position, onChange }) => {
 const LocationPicker = ({
   coordinates = null,
   onCoordinatesChange,
-  height = "400px",
+  height = '400px',
   zoom = 13,
-  className = "",
+  className = '',
   showManualInputs = true,
-  isReadOnly = false, // ✅ controls if map is editable or locked
+  isReadOnly = false, // <-- new prop
 }) => {
-  const [currentPosition, setCurrentPosition] = useState(coordinates);
+  const [position, setPosition] = useState(null);
+  const [manualCoords, setManualCoords] = useState({ lat: '', lng: '' });
+  const [hasInteracted, setHasInteracted] = useState(false);
+
+  const defaultCenter = [30.8886624, 75.7230126];
 
   useEffect(() => {
-    if (coordinates) {
-      setCurrentPosition(coordinates);
+    if (coordinates && coordinates.lat != null && coordinates.lng != null) {
+      setPosition([coordinates.lat, coordinates.lng]);
+      setManualCoords({ lat: coordinates.lat.toString(), lng: coordinates.lng.toString() });
+    } else if (!hasInteracted) {
+      setPosition(defaultCenter);
+      setManualCoords({ lat: defaultCenter[0].toString(), lng: defaultCenter[1].toString() });
     }
-  }, [coordinates]);
+  }, [coordinates, hasInteracted]);
 
-  const handlePositionChange = (pos) => {
-    setCurrentPosition(pos);
-    onCoordinatesChange?.(pos);
+  const handlePositionChange = (latlng) => {
+    if (!isReadOnly) {
+      setHasInteracted(true);
+      setPosition([latlng.lat, latlng.lng]);
+      setManualCoords({ lat: latlng.lat.toString(), lng: latlng.lng.toString() });
+      onCoordinatesChange({ lat: latlng.lat, lng: latlng.lng });
+    }
   };
 
-  return (
-    <div className={`relative ${className}`}>
-      <MapContainer
-        center={currentPosition || [20.5937, 78.9629]} // default India center
-        zoom={zoom}
-        style={{ height, width: "100%" }}
-        scrollWheelZoom={!isReadOnly} // ❌ disable zoom on scroll in read-only
-        dragging={!isReadOnly} // ❌ disable dragging in read-only
-        doubleClickZoom={!isReadOnly} // ❌ disable zoom by dbl click
-      >
-        <TileLayer
-          attribution='&copy; OpenStreetMap contributors'
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        />
-        <LocationMarker
-          position={currentPosition}
-          onPositionChange={handlePositionChange}
-          isReadOnly={isReadOnly}
-        />
-      </MapContainer>
+  const handleManualCoordinateChange = (type, value) => {
+    if (isReadOnly) return;
+    const newManualCoords = { ...manualCoords, [type]: value };
+    setManualCoords(newManualCoords);
 
-      {showManualInputs && !isReadOnly && (
-        <ManualCoordinateInputs position={currentPosition} onChange={handlePositionChange} />
+    const latValue = parseFloat(newManualCoords.lat);
+    const lngValue = parseFloat(newManualCoords.lng);
+
+    if (!isNaN(latValue) && !isNaN(lngValue)) {
+      setHasInteracted(true);
+      setPosition([latValue, lngValue]);
+      onCoordinatesChange({ lat: latValue, lng: lngValue });
+    }
+  };
+
+  const currentPosition = position || defaultCenter;
+
+  return (
+    <div className={`space-y-4 ${className}`}>
+      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+        <div style={{ height }} className="relative">
+          <MapContainer center={currentPosition} zoom={zoom} style={{ height: '100%', width: '100%' }}>
+            <TileLayer
+              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            />
+            <LocationMarker
+              position={currentPosition}
+              onPositionChange={handlePositionChange}
+              isReadOnly={isReadOnly}
+            />
+          </MapContainer>
+        </div>
+      </div>
+
+      {!isReadOnly && showManualInputs && (
+        <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+          <h4 className="text-sm font-medium text-gray-700 mb-3">Manual Coordinates</h4>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <input
+              type="number"
+              step="any"
+              value={manualCoords.lat}
+              onChange={(e) => handleManualCoordinateChange('lat', e.target.value)}
+              placeholder="Latitude"
+              className="border p-2 rounded w-full"
+            />
+            <input
+              type="number"
+              step="any"
+              value={manualCoords.lng}
+              onChange={(e) => handleManualCoordinateChange('lng', e.target.value)}
+              placeholder="Longitude"
+              className="border p-2 rounded w-full"
+            />
+          </div>
+        </div>
       )}
     </div>
   );
 };
+
 
 export default LocationPicker;

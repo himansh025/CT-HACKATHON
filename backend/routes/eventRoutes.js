@@ -1,4 +1,8 @@
-const express  =require("express");
+console.log("✅ eventRoutes.js file loaded and router configured."); // <-- ADD THIS LINE
+
+const express = require("express");
+const router = express.Router();
+
 const {
   getEvents,
   getEventById,
@@ -6,22 +10,20 @@ const {
   updateEvent,
   deleteEvent,
   getCategories,
-  getRecommendedEvents,
+  getRecommendedEvents, // <-- 1. CRITICAL IMPORT ADDED
 } = require("../controllers/eventController.js");
-const { protect, organizerOnly } =require("../middlewares/authMiddleware.js");
+const { protect, organizerOnly } = require("../middlewares/authMiddleware.js");
 const { upload } = require("../middlewares/multer.js");
 
-const router = express.Router();
-router.get('/recommendations', protect, getRecommendedEvents); // <-- Add this new route
+// 2. CRITICAL ROUTE DEFINITION: Defines the full path /api/events/recommendations
+router.get("/recommendations", protect, getRecommendedEvents);
 
 router.get("/", getEvents);
 router.get("/categories", getCategories);
 router.get("/:id", getEventById);
-router.get("/recommendations", protect, getRecommendedEvents);
-
-router.post("/",protect,organizerOnly, upload.array("images"), createEvent);
-router.put("/:id", protect,organizerOnly,upload.array("images"), updateEvent);
+router.post("/", protect, organizerOnly, upload.array("images"), createEvent);
+router.put("/:id", protect, organizerOnly, upload.array("images"), updateEvent);
 
 router.delete("/:id", protect, organizerOnly, deleteEvent);
 
-module.exports= router;
+module.exports = router;
