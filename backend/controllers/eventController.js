@@ -95,8 +95,10 @@ const getEventById = async (req, res) => {
   }
 };
 
+
 const createEvent = async (req, res) => {
   try {
+    // Handle image uploads
     let imageUrls = [];
     if (req.files?.length > 0) {
       for (const file of req.files) {
@@ -105,73 +107,133 @@ const createEvent = async (req, res) => {
       }
     }
 
+    // Parse event data
     let data = req.body;
     if (typeof req.body.eventData === "string") {
       data = JSON.parse(req.body.eventData);
     }
 
-    const newEvent = {
-      title: data.title,
-      description: data.description,
-      category: data.category,
-      date: data.date,
-      time: data.time,
-      venue: data.location || data.venue,
-      images: imageUrls,
-      price: parseFloat(data.generalPrice) || 0,
-      organizer: {
-        organizer_Id: req.user.id,
-        name: req.user.name,
-        avatar: req.user.avatar || "",
-      },
-      tickets: [],
-      featured: data.featured || false,
-      attendees: data.attendees || 0,
-      rating: 0,
-      isDraft: data.isDraft || false,
-    };
+    // Validate required fields
+    if (!data.title || !data.description || !data.category) {
+      return res.status(400).json({
+        success: false,
+        message: "Missing required fields: title, description, or category"
+      });
+    }
 
-    // Ticket Logic (Good)
+    if (!data.date || !data.startTime || !data.endTime) {
+      return res.status(400).json({
+        success: false,
+        message: "Missing required fields: date, startTime, or endTime"
+      });
+    }
+
+    if (!data.venueName || !data.venueAddress || !data.venueCapacity) {
+      return res.status(400).json({
+        success: false,
+        message: "Missing required venue information"
+      });
+    }
+
+    if (!data.coordinates || !data.coordinates.lat || !data.coordinates.lng) {
+      return res.status(400).json({
+        success: false,
+        message: "Missing venue coordinates"
+      });
+    }
+
+    // Build tickets array according to schema
+    const tickets = [];
+    
     if (data.generalPrice && parseFloat(data.generalPrice) > 0) {
-      newEvent.tickets.push({
+      tickets.push({
         type: "General Admission",
         price: parseFloat(data.generalPrice),
         quantity: parseInt(data.generalQuantity) || 100,
-        sold: 0,
+        sold: 0
+      });
+    } else {
+      return res.status(400).json({
+        success: false,
+        message: "General admission ticket is required"
       });
     }
 
     if (data.vipPrice && parseFloat(data.vipPrice) > 0) {
-      newEvent.tickets.push({
+      tickets.push({
         type: "VIP",
         price: parseFloat(data.vipPrice),
         quantity: parseInt(data.vipQuantity) || 50,
-        sold: 0,
+        sold: 0
       });
     }
 
+    // Create event object matching schema
+    const newEvent = {
+      title: data.title,
+      description: data.description,
+      category: data.category,
+      date: new Date(data.date),
+      startTime: data.startTime,
+      endTime: data.endTime,
+      images: imageUrls.length > 0 ? imageUrls : ["default-event-image.jpg"],
+      venue: {
+        name: data.venueName,
+        address: data.venueAddress || data.location,
+        capacity: parseInt(data.venueCapacity) || 100,
+        coordinates: {
+          type: "Point",
+          coordinates: [
+            parseFloat(data.coordinates.lng),
+            parseFloat(data.coordinates.lat)
+          ]
+        }
+      },
+      price: parseFloat(data.generalPrice) || 0,
+      organizer: {
+        organizer_Id: req.user.id || req.user._id,
+        name: req.user.name,
+        avatar: req.user.avatar || ""
+      },
+      tickets: tickets,
+      rating: 0,
+      attendees: 0,
+      featured: data.featured || false
+    };
+
+    // Create event in database
     const event = await Event.create(newEvent);
 
-    // Send New Event Email
-    await sendNewEventEmail({
-      email: req.user.email,
-      eventTitle: event.title,
-      eventDate: event.date,
-      eventTime: event.time,
-      eventVenue: event.venue,
-      eventId: event._id,
-    });
+    // Send notification email
+    try {
+      await sendNewEventEmail({
+        email: req.user.email,
+        eventTitle: event.title,
+        eventDate: event.date,
+        eventTime: event.startTime,
+        eventVenue: event.venue.name,
+        eventId: event._id
+      });
+    } catch (emailError) {
+      console.error("Email notification failed:", emailError);
+      // Don't fail the request if email fails
+    }
 
     res.status(201).json({
       success: true,
       message: "Event created successfully",
-      data: event,
+      data: event
     });
+
   } catch (error) {
     console.error("Error creating event:", error);
-    res.status(500).json({ success: false, message: error.message });
+    res.status(500).json({ 
+      success: false, 
+      message: error.message || "Failed to create event"
+    });
   }
 };
+
 
 // ✅ PUT /events/:id
 const updateEvent = async (req, res) => {

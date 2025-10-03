@@ -11,6 +11,8 @@ const LandingPage = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { categories, events } = useSelector(state => state.events);
+  const {  user } = useSelector(state => state.auth);
+console.log(events);
   const { searchQuery } = useSelector(state => state.ui);
 
   const handleSearch = (e) => {
@@ -21,10 +23,10 @@ const LandingPage = () => {
   };
 
   const stats = [
-    { icon: Calendar, label: 'Events Created', value: '10,000+' },
-    { icon: Users, label: 'Happy Attendees', value: '500K+' },
+    { icon: Calendar, label: 'Events Created', value: '100+' },
+    { icon: Users, label: 'Happy Attendees', value: '50+' },
     { icon: Star, label: 'Average Rating', value: '4.9' },
-    { icon: MapPin, label: 'Cities Worldwide', value: '200+' },
+    { icon: MapPin, label: 'Cities Worldwide', value: '20+' },
   ];
 
   return (
@@ -112,7 +114,7 @@ const LandingPage = () => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {events.slice(0, 6).map((event, index) => (
+          {events?.slice(0, 6).map((event, index) => (
             <EventCard key={event._id || index} event={event} />
           ))}
         </div>
@@ -147,10 +149,21 @@ const LandingPage = () => {
           <p className="text-xl text-primary-100 mb-8 leading-relaxed">
             Join thousands of organizers who trust EventHive to manage their events seamlessly
           </p>
-          <Link
+          {user&&(
+
+            <Link
             to="/create-event"
             className="inline-flex items-center space-x-2 bg-white text-primary-600 font-semibold px-8 py-4 rounded-xl hover:bg-gray-50 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-1"
-          >
+            >
+            <span>Start Creating</span>
+            <ArrowRight className="w-5 h-5" />
+          </Link>
+          )}
+          
+            <Link
+            to="/login"
+            className="inline-flex items-center space-x-2 bg-white text-primary-600 font-semibold px-8 py-4 rounded-xl hover:bg-gray-50 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-1"
+            >
             <span>Start Creating</span>
             <ArrowRight className="w-5 h-5" />
           </Link>

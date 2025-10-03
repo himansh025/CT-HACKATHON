@@ -16,10 +16,17 @@ const CreateEvent = () => {
   const [loading, setLoading] = useState(false);
   const [imageFiles, setImageFiles] = useState([]);
   const [imagePreviews, setImagePreviews] = useState([]);
+  const [coordinates, setCoordinates] = useState({ lat: null, lng: null });
 
   const { user } = useSelector((state) => state.auth);
 
-  const { register, handleSubmit, watch, formState: { errors } } = useForm();
+  const { register, handleSubmit, watch, formState: { errors }, setValue, trigger, getValues } = useForm({
+    defaultValues: {
+      ticketType: "paid",
+      privacy: "public",
+      featured: false
+    }
+  });
 
   const steps = [
     { id: 1, title: "Basic Details" },
@@ -28,62 +35,87 @@ const CreateEvent = () => {
     { id: 4, title: "Review & Publish" },
   ];
 
-  const nextStep = () => currentStep < steps.length && setCurrentStep((s) => s + 1);
+  const nextStep = async () => {
+    if (currentStep < steps.length) {
+      const isValid = await trigger();
+      if (isValid) {
+        const currentData = getValues();
+        setEventData(prev => ({ ...prev, ...currentData }));
+        setCurrentStep((s) => s + 1);
+      }
+    }
+  };
+
   const prevStep = () => currentStep > 1 && setCurrentStep((s) => s - 1);
 
- const onSubmit = async (data) => {
-  // Merge previous eventData with current form step data
-  let completeEventData = { ...eventData, ...data };
+  const handleCoordinatesChange = (coords) => {
+    setCoordinates(coords);
+    setValue("latitude", coords.lat, { shouldValidate: true });
+    setValue("longitude", coords.lng, { shouldValidate: true });
+  };
 
-  // Build tickets array from scratch
-  const tickets = [];
+  const onSubmit = async (data) => {
+    const completeEventData = { 
+      ...eventData, 
+      ...data,
+      user: user?._id
+    };
 
-  if (data.generalPrice && parseFloat(data.generalPrice) > 0) {
-    tickets.push({
-      type: "General Admission",
-      price: parseFloat(data.generalPrice),
-        available: parseInt(data.generalQuantity) || 100
-    });
-  }
-
-  if (data.vipPrice && parseFloat(data.vipPrice) > 0) {
-    tickets.push({
-      type: "VIP",
-      price: parseFloat(data.vipPrice),
-      quantity: parseInt(data.vipQuantity) || 50,
-      available: parseInt(data.generalQuantity) || 100
-    });
-  }
-
-  completeEventData.tickets = tickets; // overwrite tickets instead of pushing
-  completeEventData.price = data.generalPrice ? parseFloat(data.generalPrice) : 0;
-  completeEventData.user = user?._id;
-
-  // FormData
-  const formData = new FormData();
-  imageFiles.forEach((file) => formData.append("images", file));
-  formData.append("eventData", JSON.stringify(completeEventData));
-
-  try {
-    if (currentStep < steps.length) {
-      setEventData(completeEventData);
-      nextStep();
-    } else {
-      setLoading(true);
-      const res = await axiosinstance.post("/events", formData, {
-        headers: { "Content-Type": "multipart/form-data" },
+    // Build tickets array according to schema
+    const tickets = [];
+    
+    if (data.generalPrice && parseFloat(data.generalPrice) > 0) {
+      tickets.push({
+        type: "General Admission",
+        price: parseFloat(data.generalPrice),
+        quantity: parseInt(data.generalQuantity) || 100,
+        sold: 0
       });
-      alert("Event created successfully!");
-      console.log("Backend response:", res.data);
     }
-  } catch (err) {
-    console.error("Error creating event:", err);
-    alert("Failed to create event.");
-  } finally {
-    setLoading(false);
-  }
-};
+    
+    if (data.vipPrice && parseFloat(data.vipPrice) > 0) {
+      tickets.push({
+        type: "VIP",
+        price: parseFloat(data.vipPrice),
+        quantity: parseInt(data.vipQuantity) || 50,
+        sold: 0
+      });
+    }
 
+    completeEventData.tickets = tickets;
+    completeEventData.price = data.generalPrice ? parseFloat(data.generalPrice) : 0;
+    
+    // Add coordinates and venue details
+    completeEventData.coordinates = coordinates;
+    completeEventData.venueName = data.venueName;
+    completeEventData.venueAddress = data.location;
+    completeEventData.venueCapacity = parseInt(data.venueCapacity) || 100;
+
+    // FormData for file upload
+    const formData = new FormData();
+    imageFiles.forEach((file) => formData.append("images", file));
+    formData.append("eventData", JSON.stringify(completeEventData));
+
+    try {
+      if (currentStep < steps.length) {
+        setEventData(completeEventData);
+        nextStep();
+      } else {
+        setLoading(true);
+        const res = await axiosinstance.post("/events", formData, {
+          headers: { "Content-Type": "multipart/form-data" },
+        });
+        alert("Event created successfully!");
+        console.log("Backend response:", res.data);
+        window.location.href = "/events";
+      }
+    } catch (err) {
+      console.error("Error creating event:", err);
+      alert(err.response?.data?.message || "Failed to create event.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   if (loading) return <Loader />;
 
@@ -95,29 +127,53 @@ const CreateEvent = () => {
         <ProgressSteps steps={steps} currentStep={currentStep} />
 
         <form onSubmit={handleSubmit(onSubmit)} className="bg-white p-6 rounded-xl shadow">
-          {currentStep === 1 && <BasicDetailsForm register={register} errors={errors} />}
-          {currentStep === 2 && <TicketPricingForm register={register} />}
+          {currentStep === 1 && (
+            <BasicDetailsForm 
+              register={register} 
+              errors={errors} 
+              coordinates={coordinates}
+              onCoordinatesChange={handleCoordinatesChange}
+              setValue={setValue}
+            />
+          )}
+          {currentStep === 2 && (
+            <TicketPricingForm 
+              register={register} 
+              errors={errors}
+              watch={watch}
+            />
+          )}
           {currentStep === 3 && (
             <MediaSettingsForm
               register={register}
+              errors={errors}
               imageFiles={imageFiles}
               setImageFiles={setImageFiles}
               imagePreviews={imagePreviews}
               setImagePreviews={setImagePreviews}
             />
           )}
-          {currentStep === 4 && <ReviewPublishForm watch={watch} imagePreviews={imagePreviews} />}
+          {currentStep === 4 && (
+            <ReviewPublishForm 
+              eventData={{...eventData, ...getValues()}}
+              imagePreviews={imagePreviews} 
+              coordinates={coordinates}
+            />
+          )}
 
           <div className="flex justify-between mt-6">
             <button
               type="button"
               onClick={prevStep}
               disabled={currentStep === 1}
-              className="px-4 py-2 border rounded"
+              className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               Previous
             </button>
-            <button type="submit" className="btn-primary">
+            <button 
+              type="submit" 
+              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
+            >
               {currentStep === steps.length ? "Publish Event" : "Next"}
             </button>
           </div>

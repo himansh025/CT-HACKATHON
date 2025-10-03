@@ -108,6 +108,25 @@ const Register = () => {
               </div>
             </div>
 
+    <div>
+              <label htmlFor="phoneNo" className="block text-sm font-medium text-gray-700 mb-2">
+                Phone Number
+              </label>
+              <div className="relative">
+                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                <input
+                  id="phoneNo"
+                  name="phoneNo"
+                  type="number"
+                  required
+                  value={formData.phoneNo}
+                  onChange={handleChange}
+                  className="input-field pl-10"
+                  placeholder="Enter your phoneNo"
+                />
+              </div>
+            </div>
+
             {/* Password */}
             <div>
               <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
