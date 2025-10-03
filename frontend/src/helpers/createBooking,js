@@ -1,0 +1,19 @@
+    // Create booking + order
+    import axiosInstance from "../config/apiconfig";
+    export const createBooking = async (formData,eventId,selectedTickets,totalAmount) => {
+      try {
+          const payload={
+              userDetails:formData,
+              eventId,
+              selectedTickets,
+              totalAmount
+          }
+        const response = await axiosInstance.post("/booking",payload);
+        console.log("Order created:", response.data);
+        // Open Razorpay payment window
+        const {data,razorpayOrder}=response.data
+        return {data,razorpayOrder}
+      } catch (error) {
+        console.error("Error creating order:", error);
+      }
+    };
