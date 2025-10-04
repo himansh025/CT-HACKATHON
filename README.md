@@ -1,3 +1,5 @@
+### Event Managment Web Application
+
 A comprehensive platform where **organizers** can create, manage, and sell tickets for events, while **users** can easily discover, book, and attend them.  
 
 🌍 **Live Demo:** [Event Hive](https://event-hive117.vercel.app/) 🚀  
