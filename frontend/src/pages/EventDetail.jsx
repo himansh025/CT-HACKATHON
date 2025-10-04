@@ -28,7 +28,7 @@ const EventDetail = () => {
   const [activeTab, setActiveTab] = useState('overview');
   const [isLiked, setIsLiked] = useState(false);
   const [showLocationMap, setShowLocationMap] = useState(false);
-
+  const { user } = useSelector(state => state.auth);
   const { currentEvent, loading, error } = useSelector(state => state.events);
   const { selectedTickets, totalAmount } = useSelector(state => state.booking);
 
@@ -391,12 +391,23 @@ const EventDetail = () => {
                       </div>
                     </div>
 
-                    <Link
+                    {user &&(
+                              <Link
                       to={`/checkout/${event._id}`}
                       className="w-full btn-primary text-center block"
                     >
                       Proceed to Checkout
                     </Link>
+                    )}
+
+                    {!user &&(
+                    <Link
+                      to={`/login`}
+                      className="w-full btn-primary text-center block"
+                    >
+                      Proceed to Checkout
+                    </Link>
+                  )}
                   </div>
                 </div>
               ) : (

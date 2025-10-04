@@ -50,7 +50,7 @@ const LandingPage = () => {
   };
 
   const stats = [
-    { icon: Calendar, label: "Events Created", value: "100+" },
+    { icon: Calendar, label: "Events Created", value: "50+" },
     { icon: Users, label: "Happy Attendees", value: "50+" },
     { icon: Star, label: "Average Rating", value: "4.5" },
     { icon: MapPin, label: "Cities Worldwide", value: "20+" },
