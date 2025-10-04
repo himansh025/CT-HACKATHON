@@ -1,7 +1,7 @@
 ### Event Managment Web Application
 
 A comprehensive platform where **organizers** can create, manage, and sell tickets for events, while **users** can easily discover, book, and attend them.  
-
+        
 🌍 **Live Demo:** [Event Hive](https://event-hive117.vercel.app/) 🚀  
 
 ---
@@ -48,7 +48,7 @@ Start the development server (using nodemon):
 bash
 Copy code
 npm run dev
-Runs on: http://localhost:5000 (or process.env.PORT if set)
+Runs on: http://localhost:5000 (or process.env.PORT)
 
 2️⃣ Frontend Setup
 bash
@@ -102,8 +102,3 @@ GEMINI_API_KEY=
 
 # Server
 PORT=5000
-🌐 Development Environment
-Backend → Uses dotenv to load environment variables.
-
-Frontend → Uses Vite for fast builds and hot reloading.
-
