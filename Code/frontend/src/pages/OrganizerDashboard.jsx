@@ -7,6 +7,7 @@ import { Link } from 'react-router-dom';
 import axiosInstance from '../config/apiconfig';
 import Loader from '../components/Loader';
 import EditProfile from '../components/EditProfile';
+import QRScanner from '../components/QRScanner';
 import {
   LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid,
   Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell
@@ -417,9 +418,9 @@ const pieColors = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
         </div>
       </div>
 
-      {/* {showScanner && scannerEventId && (
-        <QRScanner eventId={scannerEventId} onClose={() => setShowScanner(false)} />
-      )} */}
+      {showScanner && scannerEventId && (
+          <QRScanner eventId={scannerEventId} onClose={() => setShowScanner(false)} />
+      )}
     </div>
   );
 };
