@@ -110,7 +110,8 @@ const getUserById = async (req, res) => {
 
 const updateProfile = async (req, res) => {
   try {
-    const { name, phone } = req.body;
+    const { name, phone,interests } = req.body;
+    console.log(interests);
     let avatarUrl;
     if (req.file) {
       const uploadedImage = await uploadOnCloudinary(req.file.path);
@@ -124,6 +125,7 @@ const updateProfile = async (req, res) => {
         $set: {
           ...(name && { name }),
           ...(phone && { phoneNo: phone }),
+          ...(interests&&{interests:interests}),
           ...(avatarUrl && { avatar: avatarUrl }),
         },
       },

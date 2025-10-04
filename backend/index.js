@@ -10,6 +10,7 @@ const eventRoutes = require("./routes/eventRoutes");
 const organizerRoute = require('./routes/organizerRoutes');
 const bookingRoute = require('./routes/bookingRoutes');
 const chatbotRoute= require('./routes/chatbotRoute')
+const collabRoute= require('./routes/eventCollabRoutes')
 
 const app = express();
 // REMOVED: const notificationRoutes = require("./routes/notificationRoutes");
@@ -37,6 +38,8 @@ app.use('/api/events', eventRoutes); // <-- THIS LINE IS CRUCIAL
 app.use('/api/organizer',organizerRoute );
 app.use('/api/booking',bookingRoute );
 app.use('/api/chatbot',chatbotRoute );
+app.use('/api/collab',collabRoute );
+
 
 // Root route
 app.get('/', (req, res) => {
