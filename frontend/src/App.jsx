@@ -7,7 +7,6 @@ import EventDiscovery from './pages/EventDiscovery';
 import EventDetail from './pages/EventDetail';
 import CreateEvent from './components/CreateEvent/CreateEvent';
 import Checkout from './pages/Checkout';
-import UserDashboard from './pages/UserDashboard';
 import OrganizerDashboard from './pages/OrganizerDashboard';
 import Login from './pages/Login';
 import Register from './pages/Register';
@@ -18,6 +17,8 @@ import { setEvents } from './store/slices/eventsSlice';
 import axiosInstance from './config/apiconfig';
 import NotificationPopup from './components/NotificationPopup'; // Import new component
 import Chatbot from './components/Chatbot';
+import EventCollaborationPanel from './pages/EventCollaborationPanel';
+import UserDashboard from './pages/UserDashboard/UserDashboard';
 
 
 function App() {
@@ -72,7 +73,7 @@ function App() {
             }
             {user?.role === "user" && (
               <>
-
+                <Route path="/collab" element={<EventCollaborationPanel />} />
                 <Route path="/checkout/:eventId" element={<Checkout />} />
                 <Route path="/dashboard" element={<UserDashboard />} />
               </>

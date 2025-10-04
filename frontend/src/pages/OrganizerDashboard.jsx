@@ -12,7 +12,6 @@ import {
   Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell
 } from 'recharts';
 
-import QRScanner from '../components/QRScanner';
 
 const OrganizerDashboard = () => {
   const [activeTab, setActiveTab] = useState('overview');

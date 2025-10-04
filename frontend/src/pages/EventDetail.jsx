@@ -20,6 +20,7 @@ import { addTicket, removeTicket } from '../store/slices/bookingSlice';
 import { format } from 'date-fns';
 import { setCurrentEvent } from '../store/slices/eventsSlice';
 import LocationPicker from '../components/LocationPicker';
+import EventCollaborationPanel from './EventCollaborationPanel';
 
 const EventDetail = () => {
   const { id } = useParams();
@@ -94,6 +95,7 @@ const EventDetail = () => {
     { id: 'overview', label: 'Overview' },
     { id: 'tickets', label: 'Tickets' },
     { id: 'location', label: 'Location' },
+    { id: 'collab', label: 'Collab Buddy' },
     { id: 'reviews', label: 'Reviews' },
   ];
 
@@ -140,8 +142,8 @@ const EventDetail = () => {
             <button
               onClick={() => setIsLiked(!isLiked)}
               className={`p-3 rounded-full transition-all duration-200 ${isLiked
-                  ? 'bg-red-500 text-white'
-                  : 'bg-white/20 backdrop-blur-sm text-white hover:bg-white/30'
+                ? 'bg-red-500 text-white'
+                : 'bg-white/20 backdrop-blur-sm text-white hover:bg-white/30'
                 }`}
             >
               <Heart className={`w-5 h-5 ${isLiked ? 'fill-current' : ''}`} />
@@ -164,8 +166,8 @@ const EventDetail = () => {
                       key={tab.id}
                       onClick={() => setActiveTab(tab.id)}
                       className={`py-4 border-b-2 font-medium text-sm transition-colors whitespace-nowrap ${activeTab === tab.id
-                          ? 'border-primary-600 text-primary-600'
-                          : 'border-transparent text-gray-500 hover:text-gray-700'
+                        ? 'border-primary-600 text-primary-600'
+                        : 'border-transparent text-gray-500 hover:text-gray-700'
                         }`}
                     >
                       {tab.label}
@@ -276,6 +278,18 @@ const EventDetail = () => {
                   </div>
                 )}
 
+           
+
+  {activeTab === 'collab' && (
+                  <div className="space-y-6">
+                    <div>
+                      <h3 className="text-xl font-semibold text-gray-900 mb-3">Collab Buddy</h3>
+                    <EventCollaborationPanel eventId={event._id}/>
+                    </div>
+                  </div>
+                )}
+
+
                 {activeTab === 'location' && (
                   <div className="space-y-6">
                     <div>
@@ -292,34 +306,34 @@ const EventDetail = () => {
                           </div>
                         </div>
 
-                   {/* User Event Details */}
-{event.venue?.coordinates && (
-  <div className="mt-4">
-    <button
-      onClick={() => setShowLocationMap(!showLocationMap)}
-      className="flex items-center space-x-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700"
-    >
-      <Navigation className="w-4 h-4" />
-      <span>{showLocationMap ? "Hide Map" : "Show on Map"}</span>
-    </button>
+                        {/* User Event Details */}
+                        {event.venue?.coordinates && (
+                          <div className="mt-4">
+                            <button
+                              onClick={() => setShowLocationMap(!showLocationMap)}
+                              className="flex items-center space-x-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700"
+                            >
+                              <Navigation className="w-4 h-4" />
+                              <span>{showLocationMap ? "Hide Map" : "Show on Map"}</span>
+                            </button>
 
-    {showLocationMap && (
-      <div className="mt-4 rounded-lg overflow-hidden border border-gray-200">
-        <LocationPicker
-          coordinates={{
-            lat: event?.venue?.coordinates?.coordinates[1], // latitude
-            lng: event?.venue?.coordinates?.coordinates[0], // longitude
-          }}
-          onCoordinatesChange={() => {}} // noop since user cannot change
-          height="300px"
-          zoom={15}
-          showManualInputs={false}
-          isReadOnly={true} // ❌ locked
-        />
-      </div>
-    )}
-  </div>
-)}
+                            {showLocationMap && (
+                              <div className="mt-4 rounded-lg overflow-hidden border border-gray-200">
+                                <LocationPicker
+                                  coordinates={{
+                                    lat: event?.venue?.coordinates?.coordinates[1], // latitude
+                                    lng: event?.venue?.coordinates?.coordinates[0], // longitude
+                                  }}
+                                  onCoordinatesChange={() => { }} // noop since user cannot change
+                                  height="300px"
+                                  zoom={15}
+                                  showManualInputs={false}
+                                  isReadOnly={true} // ❌ locked
+                                />
+                              </div>
+                            )}
+                          </div>
+                        )}
 
                       </div>
                     </div>
